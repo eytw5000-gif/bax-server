@@ -8,7 +8,6 @@ app.use(express.json());
 const KEYS_FILE = './keys.json';
 const HWID_FILE = './hwid.json';
 
-// دالة لتوليد 1000 مفتاح عشوائي إذا لم تكن موجودة
 function generateKeys() {
     if (!fs.existsSync(KEYS_FILE)) {
         const keys = [];
@@ -20,10 +19,8 @@ function generateKeys() {
             }
             keys.push(key);
         }
-        // إضافة المفتاح الأساسي للتجربة
         keys.push('BAX123');
         fs.writeFileSync(KEYS_FILE, JSON.stringify(keys, null, 2));
-        console.log('Generated 1000 keys in keys.json');
     }
 }
 
@@ -44,31 +41,42 @@ function saveHwidData(data) {
 
 generateKeys();
 
-// مسار عرض جميع المفاتيح على المتصفح (عشان يشتغل رابط /keys بدون أخطاء)
+// صفحة عرض جميع المفاتيح
 app.get('/keys', (req, res) => {
     const keys = getKeys();
     res.send(`
         <html>
-            <head>
-                <title>BAX COMMUNITY - Keys List</title>
-                <style>
-                    body { background-color: #0c0c0f; color: #ff3333; font-family: monospace; padding: 20px; }
-                    h1 { color: #fff; text-shadow: 0 0 10px #ff0000; }
-                    .key-box { background: #1a1a20; padding: 10px; margin: 5px 0; border: 1px solid #500; border-radius: 4px; color: #fff; }
-                </style>
-            </head>
-            <body>
-                <h1>BAX COMMUNITY | BXA - All Keys (1000+)</h1>
-                <p>Total Keys Available: ${keys.length}</p>
+            <head><title>BAX - Keys</title></head>
+            <body style="background:#0c0c0f; color:#ff3333; font-family:monospace; padding:20px;">
+                <h1>BAX COMMUNITY | All Keys (${keys.length})</h1>
+                <div>${keys.map(k => `<div style="background:#1a1a20; padding:8px; margin:4px 0; border:1px solid #500; color:#fff;">${k}</div>`).join('')}</div>
+            </body>
+        </html>
+    `);
+});
+
+// صفحة جديدة لعرض المفاتيح المستخدمة وأجهزة اللاعبين (HWID)
+app.get('/used', (req, res) => {
+    const hwidData = getHwidData();
+    res.send(`
+        <html>
+            <head><title>BAX - Used Keys & HWID</title></head>
+            <body style="background:#0c0c0f; color:#33ff66; font-family:monospace; padding:20px;">
+                <h1>BAX COMMUNITY | Used Keys & HWID Log</h1>
+                <p>Total Used: ${Object.keys(hwidData).length}</p>
                 <div>
-                    ${keys.map(k => `<div class="key-box">${k}</div>`).join('')}
+                    ${Object.entries(hwidData).map(([hwid, key]) => `
+                        <div style="background:#1a201a; padding:10px; margin:6px 0; border:1px solid #050; color:#fff;">
+                            <b>Key:</b> <span style="color:#ff3333;">${key}</span><br>
+                            <b>HWID (PC):</b> <span style="color:#33aaff;">${hwid}</span>
+                        </div>
+                    `).join('')}
                 </div>
             </body>
         </html>
     `);
 });
 
-// مسار التحقق من المفتاح والـ HWID
 app.post('/verify', (req, res) => {
     const { key, hwid } = req.body;
     const keys = getKeys();
@@ -94,5 +102,5 @@ app.post('/verify', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`BAX Auth Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
